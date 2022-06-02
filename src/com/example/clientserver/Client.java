@@ -25,11 +25,13 @@ public class Client implements Runnable {
 
     private void sendMessageToServer(String message) {
 
-        System.out.println("Message to Server: " + message);
+        long threadId = Thread.currentThread().getId();
+
+        System.out.println("ClientThreadId: " + threadId + ", Message to Server: " + message);
         this.out.println(message);
 
         try {
-            System.out.println("Server response: " + in.readLine());
+            System.out.println("ClientThreadId: " + threadId + ", Server response: " + in.readLine());
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
@@ -37,7 +39,7 @@ public class Client implements Runnable {
     }
 
     public void tearDownClient() {
-        System.out.println("Tearing down the client");
+        System.out.println("Tearing down the client - threaId: " + Thread.currentThread().getId());
         try {
             this.in.close();
             this.out.close();

@@ -10,7 +10,7 @@ public class Main {
     public static void main(String [] args) {
         List<Runnable> clientThreads = new ArrayList<>();
 
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 5; i++) {
             clientThreads.add(new Client());
         }
 

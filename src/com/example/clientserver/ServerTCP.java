@@ -6,6 +6,8 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * HTTP Servers are generally more complex as the HTTP protocol contain instructions on
@@ -19,65 +21,35 @@ import java.net.Socket;
 public class ServerTCP {
 
     private ServerSocket serverSocket;
-    private Socket clientSocket;
-    private PrintWriter out;
-    private BufferedReader in;
+
+    /**
+     * ThreadPoolExecutor to handle 10 clients at a time
+     */
+    private ExecutorService executorService = Executors.newFixedThreadPool(10);
 
     public void startServer(int port) {
         try {
             this.serverSocket = new ServerSocket(port);
 
-            // blocking call until a client opens a connection to this Server
-            this.clientSocket = this.serverSocket.accept();
-            System.out.println("Client connected");
+            while(true) {  // keep the server up endlessly so it can listen to requests
+                // blocking call until a client opens a connection to this Server
+                Socket clientSocket = this.serverSocket.accept();
 
-            out = new PrintWriter(clientSocket.getOutputStream(), true);
-            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-            String message;
-
-            // in.readLine() is blocking until server receives a message
-            while ((message = in.readLine()) != null) {
-                boolean quit = processMessage(message);
-                if (quit) {
-                    break;
-                }
+                // Once the connection is made, submit it to a new thread for processing
+                executorService.submit(new ServerTask(clientSocket));
             }
 
-            this.stop();
+//            this.stop();
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }
     }
 
-    private boolean processMessage(String message) {
-        System.out.println("Message received: " + message);
-        boolean quit = false;
-        if ("ping".equalsIgnoreCase(message)) {
-            out.println("PONG");
-        }
-        else if("!".equals(message)) {
-            out.println("Abort signal received. Ending session!");
-            quit = true;
-        }
-        else {
-            out.println("Unrecognized command!");
-        }
 
-        return quit;
-    }
-
-    public void stop() {
-        try {
-            in.close();
-            out.close();
-            clientSocket.close();
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
+    private void stop() throws IOException {
+        this.executorService.shutdown();
+        this.serverSocket.close();
     }
 
     public static void main(String [] args) {
